@@ -237,17 +237,24 @@ export const trackPlay = async (
   playedFrom: 'playlist' | 'embed',
   playedDuration: number
 ): Promise<void> => {
-  const { error } = await supabase
-    .from('audio_plays')
-    .insert({
-      audio_id: audioId,
-      playlist_id: playlistId,
-      played_from: playedFrom,
-      played_duration: playedDuration
-    });
+  try {
+    const { error } = await supabase
+      .from('audio_plays')
+      .insert({
+        audio_id: audioId,
+        playlist_id: playlistId,
+        played_from: playedFrom,
+        played_duration: playedDuration
+      })
+      .select();
 
-  if (error) {
-    throw new Error(`Error tracking play: ${error.message}`);
+    if (error) {
+      console.error('Error tracking play:', error);
+      throw error;
+    }
+  } catch (err) {
+    // Log error but don't throw to prevent disrupting playback
+    console.error('Failed to track play:', err);
   }
 };
 

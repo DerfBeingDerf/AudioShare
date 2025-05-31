@@ -7,4 +7,15 @@ if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Missing Supabase environment variables');
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// Configure Supabase client with additional options for better CORS handling
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    persistSession: false, // Don't persist auth state in embedded context
+    detectSessionInUrl: false // Don't detect session from URL in embedded context
+  },
+  global: {
+    headers: {
+      'X-Client-Info': 'audio-platform-embed'
+    }
+  }
+});

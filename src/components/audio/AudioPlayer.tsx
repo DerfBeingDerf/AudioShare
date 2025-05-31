@@ -25,6 +25,7 @@ export default function AudioPlayer({
   const audioRef = useRef<HTMLAudioElement>(null);
   const progressBarRef = useRef<HTMLDivElement>(null);
   const lastTrackingRef = useRef<number>(0);
+  const trackingIntervalRef = useRef<number>();
 
   const currentTrack = tracks[currentTrackIndex]?.audio_file;
 
@@ -47,14 +48,24 @@ export default function AudioPlayer({
       }
     }, 300);
     
-    return () => clearTimeout(timeoutId);
+    return () => {
+      clearTimeout(timeoutId);
+      if (trackingIntervalRef.current) {
+        clearInterval(trackingIntervalRef.current);
+      }
+    };
   }, [currentTrackIndex]);
 
   // Track play progress every 10 seconds
   useEffect(() => {
-    if (!isPlaying || !currentTrack) return;
+    if (!isPlaying || !currentTrack) {
+      if (trackingIntervalRef.current) {
+        clearInterval(trackingIntervalRef.current);
+      }
+      return;
+    }
 
-    const interval = setInterval(async () => {
+    trackingIntervalRef.current = window.setInterval(async () => {
       if (!audioRef.current) return;
 
       const currentDuration = Math.floor(audioRef.current.currentTime);
@@ -73,9 +84,13 @@ export default function AudioPlayer({
           console.error('Failed to track play:', error);
         }
       }
-    }, 10000);
+    }, 10000) as unknown as number;
 
-    return () => clearInterval(interval);
+    return () => {
+      if (trackingIntervalRef.current) {
+        clearInterval(trackingIntervalRef.current);
+      }
+    };
   }, [isPlaying, currentTrack, playlistId, playedFrom]);
 
   const togglePlayPause = () => {
