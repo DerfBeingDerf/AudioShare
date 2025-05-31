@@ -2,19 +2,29 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Play, Pause, SkipBack, SkipForward, Volume2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { PlaylistTrack } from '../../types';
+import { trackPlay } from '../../lib/api';
 
 type AudioPlayerProps = {
   tracks: PlaylistTrack[];
   currentTrackIndex: number;
   onTrackChange: (index: number) => void;
+  playlistId?: string;
+  playedFrom?: 'playlist' | 'embed';
 };
 
-export default function AudioPlayer({ tracks, currentTrackIndex, onTrackChange }: AudioPlayerProps) {
+export default function AudioPlayer({ 
+  tracks, 
+  currentTrackIndex, 
+  onTrackChange,
+  playlistId,
+  playedFrom = 'playlist'
+}: AudioPlayerProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const audioRef = useRef<HTMLAudioElement>(null);
   const progressBarRef = useRef<HTMLDivElement>(null);
+  const lastTrackingRef = useRef<number>(0);
 
   const currentTrack = tracks[currentTrackIndex]?.audio_file;
 
@@ -22,6 +32,7 @@ export default function AudioPlayer({ tracks, currentTrackIndex, onTrackChange }
     // Reset player state when track changes
     setCurrentTime(0);
     setIsPlaying(false);
+    lastTrackingRef.current = 0;
     
     // Set maximum volume and start playing after a slight delay
     if (audioRef.current) {
@@ -38,6 +49,34 @@ export default function AudioPlayer({ tracks, currentTrackIndex, onTrackChange }
     
     return () => clearTimeout(timeoutId);
   }, [currentTrackIndex]);
+
+  // Track play progress every 10 seconds
+  useEffect(() => {
+    if (!isPlaying || !currentTrack) return;
+
+    const interval = setInterval(async () => {
+      if (!audioRef.current) return;
+
+      const currentDuration = Math.floor(audioRef.current.currentTime);
+      const sinceLast = currentDuration - lastTrackingRef.current;
+
+      if (sinceLast >= 10) {
+        try {
+          await trackPlay(
+            currentTrack.id,
+            playlistId || null,
+            playedFrom,
+            sinceLast
+          );
+          lastTrackingRef.current = currentDuration;
+        } catch (error) {
+          console.error('Failed to track play:', error);
+        }
+      }
+    }, 10000);
+
+    return () => clearInterval(interval);
+  }, [isPlaying, currentTrack, playlistId, playedFrom]);
 
   const togglePlayPause = () => {
     if (!audioRef.current) return;

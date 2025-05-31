@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import { AudioFile, Playlist, PlaylistTrack } from '../types';
+import { AudioFile, Playlist, PlaylistTrack, Analytics } from '../types';
 import { v4 as uuidv4 } from 'uuid';
 
 // Audio file operations
@@ -228,4 +228,38 @@ export const getPublicPlaylist = async (playlistId: string): Promise<{
   }
 
   return { playlist, tracks: tracks || [] };
+};
+
+// Analytics functions
+export const trackPlay = async (
+  audioId: string,
+  playlistId: string | null,
+  playedFrom: 'playlist' | 'embed',
+  playedDuration: number
+): Promise<void> => {
+  const { error } = await supabase
+    .from('audio_plays')
+    .insert({
+      audio_id: audioId,
+      playlist_id: playlistId,
+      played_from: playedFrom,
+      played_duration: playedDuration
+    });
+
+  if (error) {
+    throw new Error(`Error tracking play: ${error.message}`);
+  }
+};
+
+export const getAudioAnalytics = async (userId: string): Promise<Analytics[]> => {
+  const { data, error } = await supabase
+    .from('audio_analytics')
+    .select('*')
+    .eq('user_id', userId);
+
+  if (error) {
+    throw new Error(`Error fetching analytics: ${error.message}`);
+  }
+
+  return data || [];
 };

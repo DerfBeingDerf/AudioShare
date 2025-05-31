@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Music, User, LogOut, Home, Library, Upload } from 'lucide-react';
+import { Music, User, LogOut, Home, Library, Upload, BarChart3 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { motion } from 'framer-motion';
 
@@ -126,6 +126,24 @@ export default function Navbar() {
                     <Upload size={18} />
                     <span>Upload</span>
                     {isActive('/upload') && (
+                      <motion.div 
+                        layoutId="nav-indicator"
+                        className="absolute bottom-0 left-0 right-0 h-0.5 bg-sky-400"
+                      />
+                    )}
+                  </Link>
+
+                  <Link 
+                    to="/analytics" 
+                    className={`px-3 h-full flex items-center space-x-2 transition-colors relative ${
+                      isActive('/analytics') 
+                        ? 'text-sky-400' 
+                        : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    <BarChart3 size={18} />
+                    <span>Analytics</span>
+                    {isActive('/analytics') && (
                       <motion.div 
                         layoutId="nav-indicator"
                         className="absolute bottom-0 left-0 right-0 h-0.5 bg-sky-400"
