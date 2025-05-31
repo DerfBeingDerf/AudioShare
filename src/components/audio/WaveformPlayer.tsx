@@ -14,7 +14,6 @@ export default function WaveformPlayer({ tracks, currentTrackIndex, onTrackChang
   const [isPlaying, setIsPlaying] = useState(false);
   const waveformRef = useRef<HTMLDivElement>(null);
   const wavesurfer = useRef<WaveSurfer | null>(null);
-  const abortController = useRef<AbortController | null>(null);
   const currentTrack = tracks[currentTrackIndex]?.audio_file;
 
   useEffect(() => {
@@ -60,9 +59,6 @@ export default function WaveformPlayer({ tracks, currentTrackIndex, onTrackChang
     });
 
     return () => {
-      if (abortController.current) {
-        abortController.current.abort();
-      }
       if (wavesurfer.current) {
         wavesurfer.current.destroy();
       }
@@ -72,21 +68,18 @@ export default function WaveformPlayer({ tracks, currentTrackIndex, onTrackChang
   useEffect(() => {
     if (!wavesurfer.current || !currentTrack) return;
 
-    if (abortController.current) {
-      abortController.current.abort();
-    }
+    // Create a new AbortController for this effect instance
+    const controller = new AbortController();
 
-    abortController.current = new AbortController();
-    wavesurfer.current.load(currentTrack.file_url, undefined, abortController.current.signal);
+    wavesurfer.current.load(currentTrack.file_url, undefined, controller.signal);
     setIsPlaying(false);
 
     // Ensure volume is maximum after loading new track
     wavesurfer.current.setVolume(1.0);
 
     return () => {
-      if (abortController.current) {
-        abortController.current.abort();
-      }
+      // Cleanup: abort the controller for this effect instance
+      controller.abort();
     };
   }, [currentTrackIndex, currentTrack]);
 
