@@ -25,7 +25,7 @@ export default function AudioPlayer({
   const audioRef = useRef<HTMLAudioElement>(null);
   const progressBarRef = useRef<HTMLDivElement>(null);
   const lastTrackingRef = useRef<number>(0);
-  const trackingIntervalRef = useRef<number>();
+  const trackingTimeoutRef = useRef<NodeJS.Timeout>();
 
   const currentTrack = tracks[currentTrackIndex]?.audio_file;
 
@@ -50,28 +50,21 @@ export default function AudioPlayer({
     
     return () => {
       clearTimeout(timeoutId);
-      if (trackingIntervalRef.current) {
-        clearInterval(trackingIntervalRef.current);
+      if (trackingTimeoutRef.current) {
+        clearTimeout(trackingTimeoutRef.current);
       }
     };
   }, [currentTrackIndex]);
 
   // Track play progress every 0.5 seconds
   useEffect(() => {
-    if (!isPlaying || !currentTrack) {
-      if (trackingIntervalRef.current) {
-        clearInterval(trackingIntervalRef.current);
-      }
-      return;
-    }
-
-    trackingIntervalRef.current = window.setInterval(async () => {
-      if (!audioRef.current) return;
+    const trackPlayProgress = async () => {
+      if (!isPlaying || !currentTrack || !audioRef.current) return;
 
       const currentDuration = Math.floor(audioRef.current.currentTime);
       const sinceLast = currentDuration - lastTrackingRef.current;
 
-      if (sinceLast >= 0.5) { // Changed from 10 to 0.5 seconds
+      if (sinceLast >= 0.5) {
         try {
           await trackPlay(
             currentTrack.id,
@@ -84,11 +77,18 @@ export default function AudioPlayer({
           console.error('Failed to track play:', error);
         }
       }
-    }, 500) as unknown as number; // Changed from 10000 to 500 milliseconds
+
+      // Schedule next tracking
+      trackingTimeoutRef.current = setTimeout(trackPlayProgress, 500);
+    };
+
+    if (isPlaying && currentTrack) {
+      trackPlayProgress();
+    }
 
     return () => {
-      if (trackingIntervalRef.current) {
-        clearInterval(trackingIntervalRef.current);
+      if (trackingTimeoutRef.current) {
+        clearTimeout(trackingTimeoutRef.current);
       }
     };
   }, [isPlaying, currentTrack, playlistId, playedFrom]);
