@@ -56,7 +56,7 @@ export default function AudioPlayer({
     };
   }, [currentTrackIndex]);
 
-  // Track play progress every 10 seconds
+  // Track play progress every 0.5 seconds
   useEffect(() => {
     if (!isPlaying || !currentTrack) {
       if (trackingIntervalRef.current) {
@@ -71,7 +71,7 @@ export default function AudioPlayer({
       const currentDuration = Math.floor(audioRef.current.currentTime);
       const sinceLast = currentDuration - lastTrackingRef.current;
 
-      if (sinceLast >= 10) {
+      if (sinceLast >= 0.5) { // Changed from 10 to 0.5 seconds
         try {
           await trackPlay(
             currentTrack.id,
@@ -84,7 +84,7 @@ export default function AudioPlayer({
           console.error('Failed to track play:', error);
         }
       }
-    }, 10000) as unknown as number;
+    }, 500) as unknown as number; // Changed from 10000 to 500 milliseconds
 
     return () => {
       if (trackingIntervalRef.current) {
