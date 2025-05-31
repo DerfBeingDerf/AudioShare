@@ -13,7 +13,7 @@ import PlaylistDetailPage from './pages/PlaylistDetailPage';
 import EmbedPage from './pages/EmbedPage';
 import AnalyticsPage from './pages/AnalyticsPage';
 
-function App() {
+export default function App() {
   const { user, loading } = useAuth();
   const location = useLocation();
   
