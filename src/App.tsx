@@ -11,7 +11,6 @@ import UploadPage from './pages/UploadPage';
 import LibraryPage from './pages/LibraryPage';
 import PlaylistDetailPage from './pages/PlaylistDetailPage';
 import EmbedPage from './pages/EmbedPage';
-import AnalyticsPage from './pages/AnalyticsPage';
 
 export default function App() {
   const { user, loading } = useAuth();
@@ -47,13 +46,12 @@ export default function App() {
           <Route path="/upload" element={<UploadPage />} />
           <Route path="/library" element={<LibraryPage />} />
           <Route path="/playlist/:playlistId" element={<PlaylistDetailPage />} />
-          <Route path="/analytics" element={<AnalyticsPage />} />
           
           {/* Public embed route */}
           <Route path="/embed/:playlistId" element={<EmbedPage />} />
           
           {/* Fallback route */}
-          <Route path="*" element={<Navigate to="/\" replace />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
     </>

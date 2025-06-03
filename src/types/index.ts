@@ -28,14 +28,3 @@ export interface PlaylistTrack {
   position: number;
   audio_file: AudioFile;
 }
-
-export interface Analytics {
-  audio_id: string;
-  audio_title: string;
-  total_plays: number;
-  unique_playlists: number;
-  total_play_duration: number;
-  embed_plays: number;
-  playlist_plays: number;
-  last_played_at: string;
-}
