@@ -107,18 +107,29 @@ export const createPlaylist = async (
   return data;
 };
 
-export const getUserPlaylists = async (userId: string): Promise<Playlist[]> => {
-  const { data, error } = await supabase
+export const getUserPlaylists = async (userId: string): Promise<{ playlist: Playlist; clickCount: number }[]> => {
+  const { data: playlists, error: playlistError } = await supabase
     .from('playlists')
-    .select('*')
+    .select('*, playlist_clicks(count)')
     .eq('user_id', userId)
     .order('created_at', { ascending: false });
 
-  if (error) {
-    throw new Error(`Error fetching playlists: ${error.message}`);
+  if (playlistError) {
+    throw new Error(`Error fetching playlists: ${playlistError.message}`);
   }
 
-  return data || [];
+  return (playlists || []).map(playlist => ({
+    playlist: {
+      id: playlist.id,
+      user_id: playlist.user_id,
+      title: playlist.title,
+      description: playlist.description,
+      is_public: playlist.is_public,
+      created_at: playlist.created_at,
+      updated_at: playlist.updated_at
+    },
+    clickCount: playlist.playlist_clicks?.[0]?.count || 0
+  }));
 };
 
 export const getPlaylist = async (playlistId: string): Promise<Playlist> => {
@@ -228,4 +239,18 @@ export const getPublicPlaylist = async (playlistId: string): Promise<{
   }
 
   return { playlist, tracks: tracks || [] };
+};
+
+export const trackPlaylistClick = async (playlistId: string): Promise<void> => {
+  try {
+    const { error } = await supabase
+      .from('playlist_clicks')
+      .insert({ playlist_id: playlistId });
+
+    if (error) {
+      console.error('Error tracking playlist click:', error);
+    }
+  } catch (err) {
+    console.error('Failed to track playlist click:', err);
+  }
 };

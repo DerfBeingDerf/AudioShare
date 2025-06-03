@@ -1,15 +1,16 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Music, ListMusic, Share2 } from 'lucide-react';
+import { Music, ListMusic, Share2, Play } from 'lucide-react';
 import { Playlist } from '../../types';
 import { motion } from 'framer-motion';
 
 type PlaylistCardProps = {
   playlist: Playlist;
   trackCount?: number;
+  clickCount?: number;
 };
 
-export default function PlaylistCard({ playlist, trackCount = 0 }: PlaylistCardProps) {
+export default function PlaylistCard({ playlist, trackCount = 0, clickCount = 0 }: PlaylistCardProps) {
   return (
     <motion.div 
       initial={{ opacity: 0, y: 20 }}
@@ -31,9 +32,16 @@ export default function PlaylistCard({ playlist, trackCount = 0 }: PlaylistCardP
           )}
           
           <div className="mt-3 flex items-center justify-between">
-            <div className="flex items-center text-sm text-slate-400">
-              <Music size={16} className="mr-1" />
-              <span>{trackCount} {trackCount === 1 ? 'track' : 'tracks'}</span>
+            <div className="flex items-center gap-4 text-sm text-slate-400">
+              <div className="flex items-center">
+                <Music size={16} className="mr-1" />
+                <span>{trackCount} {trackCount === 1 ? 'track' : 'tracks'}</span>
+              </div>
+              
+              <div className="flex items-center text-sky-400">
+                <Play size={16} className="mr-1" />
+                <span>{clickCount}</span>
+              </div>
             </div>
             
             {playlist.is_public && (
