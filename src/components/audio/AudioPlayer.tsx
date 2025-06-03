@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Play, Pause, SkipBack, SkipForward, Volume2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { PlaylistTrack } from '../../types';
-import { trackPlaylistClick } from '../../lib/api';
+import { trackPlay } from '../../lib/api';
 
 type AudioPlayerProps = {
   tracks: PlaylistTrack[];
@@ -17,13 +17,15 @@ export default function AudioPlayer({
   currentTrackIndex, 
   onTrackChange,
   playlistId,
+  playedFrom = 'playlist'
 }: AudioPlayerProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const audioRef = useRef<HTMLAudioElement>(null);
   const progressBarRef = useRef<HTMLDivElement>(null);
-  const hasTrackedInitialPlay = useRef<boolean>(false);
+  const lastTrackingRef = useRef<number>(0);
+  const trackingTimeoutRef = useRef<NodeJS.Timeout>();
 
   const currentTrack = tracks[currentTrackIndex]?.audio_file;
 
@@ -31,7 +33,7 @@ export default function AudioPlayer({
     // Reset player state when track changes
     setCurrentTime(0);
     setIsPlaying(false);
-    hasTrackedInitialPlay.current = false;
+    lastTrackingRef.current = 0;
     
     // Set maximum volume and start playing after a slight delay
     if (audioRef.current) {
@@ -46,19 +48,57 @@ export default function AudioPlayer({
       }
     }, 300);
     
-    return () => clearTimeout(timeoutId);
+    return () => {
+      clearTimeout(timeoutId);
+      if (trackingTimeoutRef.current) {
+        clearTimeout(trackingTimeoutRef.current);
+      }
+    };
   }, [currentTrackIndex]);
 
-  const togglePlayPause = async () => {
+  // Track play progress every 0.5 seconds
+  useEffect(() => {
+    const trackPlayProgress = async () => {
+      if (!isPlaying || !currentTrack || !audioRef.current) return;
+
+      const currentDuration = Math.floor(audioRef.current.currentTime);
+      const sinceLast = currentDuration - lastTrackingRef.current;
+
+      if (sinceLast >= 0.5) {
+        try {
+          await trackPlay(
+            currentTrack.id,
+            playlistId || null,
+            playedFrom,
+            sinceLast
+          );
+          lastTrackingRef.current = currentDuration;
+        } catch (error) {
+          console.error('Failed to track play:', error);
+        }
+      }
+
+      // Schedule next tracking
+      trackingTimeoutRef.current = setTimeout(trackPlayProgress, 500);
+    };
+
+    if (isPlaying && currentTrack) {
+      trackPlayProgress();
+    }
+
+    return () => {
+      if (trackingTimeoutRef.current) {
+        clearTimeout(trackingTimeoutRef.current);
+      }
+    };
+  }, [isPlaying, currentTrack, playlistId, playedFrom]);
+
+  const togglePlayPause = () => {
     if (!audioRef.current) return;
     
     if (isPlaying) {
       audioRef.current.pause();
     } else {
-      if (!hasTrackedInitialPlay.current && playlistId) {
-        hasTrackedInitialPlay.current = true;
-        await trackPlaylistClick(playlistId);
-      }
       audioRef.current.play()
         .catch(error => console.error('Playback failed:', error));
     }
@@ -68,7 +108,9 @@ export default function AudioPlayer({
 
   const handleTimeUpdate = () => {
     if (!audioRef.current) return;
+    
     setCurrentTime(audioRef.current.currentTime);
+    
     if (audioRef.current.ended) {
       playNextTrack();
     }
@@ -77,7 +119,7 @@ export default function AudioPlayer({
   const handleLoadedMetadata = () => {
     if (!audioRef.current) return;
     setDuration(audioRef.current.duration);
-    audioRef.current.volume = 1.0;
+    audioRef.current.volume = 1.0; // Ensure maximum volume on load
   };
 
   const handleProgressBarClick = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -97,12 +139,14 @@ export default function AudioPlayer({
     if (currentTrackIndex < tracks.length - 1) {
       onTrackChange(currentTrackIndex + 1);
     } else {
+      // Loop back to the first track
       onTrackChange(0);
     }
   };
 
   const playPreviousTrack = () => {
     if (currentTime > 3) {
+      // If we're more than 3 seconds into the song, restart it
       if (audioRef.current) {
         audioRef.current.currentTime = 0;
         setCurrentTime(0);

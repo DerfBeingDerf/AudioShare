@@ -10,7 +10,7 @@ import { Playlist } from '../types';
 export default function LibraryPage() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
-  const [playlists, setPlaylists] = useState<{ playlist: Playlist; clickCount: number }[]>([]);
+  const [playlists, setPlaylists] = useState<Playlist[]>([]);
   const [trackCounts, setTrackCounts] = useState<Record<string, number>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -32,7 +32,7 @@ export default function LibraryPage() {
       // Fetch track counts for each playlist
       const counts: Record<string, number> = {};
       await Promise.all(
-        userPlaylists.map(async ({ playlist }) => {
+        userPlaylists.map(async (playlist) => {
           const tracks = await getPlaylistTracks(playlist.id);
           counts[playlist.id] = tracks.length;
         })
@@ -83,12 +83,11 @@ export default function LibraryPage() {
         </div>
       ) : (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {playlists.map(({ playlist, clickCount }) => (
+          {playlists.map((playlist) => (
             <PlaylistCard 
               key={playlist.id} 
               playlist={playlist} 
               trackCount={trackCounts[playlist.id] || 0}
-              clickCount={clickCount}
             />
           ))}
         </div>
